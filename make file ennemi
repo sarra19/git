@@ -1,0 +1,1 @@
+prog: ennemi.o main.o gcc -o prog ennemi.o main.o -lSDL -lSDL_ttf -lSDL_mixer -lSDL_image main.o : main.c ennemi.h gcc -c main.c ennemi.o : ennemi.c ennemi.h gcc -c ennemi.c
