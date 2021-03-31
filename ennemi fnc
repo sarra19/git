@@ -1,0 +1,71 @@
+#include "enemy.h"
+#include "main.h"
+#include "move.h" 
+#include "collision.h"
+#include "hero.h"
+#include "stage1.h"
+#include "youlose.h"
+void Enemy_Initialize(int Yground,ENEMY *enemy,float size) 
+{ Move_Initialize(&enemy->idle,"./images/enemies/enemy1/idle/",2,"idle", size);
+Move_Initialize(&enemy->run,"./images/enemies/enemy1/run/",2,"run", size);
+enemy->CurrentMove=enemy->idle;
+enemy->w=enemy->CurrentMove.CurrentFrame->w;
+enemy->h=enemy->CurrentMove.CurrentFrame->h;
+enemy->PositionRect.y = (Yground-enemy->h-400)*size;
+enemy->PositionRect.x = 1100*size;
+enemy->speed=12*size; 
+enemy->WalkingZoneLength=600*size;
+enemy->steps=0;
+enemy->direction=-1;
+enemy->grav=1;
+enemy->IsJumping=0;
+enemy->health = Health_Initialize(enemy->CurrentMove.CurrentFrame, enemy->PositionRect, size); }
+void Init_Enemies_Positions(float size, ENEMY enemies[]) 
+{ enemies[0].PositionRect.x=1100*size;
+
+enemies[0].PositionRect.y=0;
+enemies[1].PositionRect.x=4000*size; 
+enemies[1].PositionRect.y=0;
+enemies[2].PositionRect.x=6000*size;
+enemies[2].PositionRect.y=0;
+enemies[3].PositionRect.x=7000*size;
+enemies[3].PositionRect.y=0; }
+void Enemy_Auto_Moving(ENEMY *enemy, ALL_ELEMENTS elements, float size)
+{ int step,jump;
+if(enemy->steps<=0 || enemy->steps>=enemy->WalkingZoneLength) { enemy->direction*=-1; }
+if(enemy->direction==1)
+{ step=Collision_Right_OnTheWay(enemy->speed, enemy->CurrentMove.CurrentFrame, enemy->PositionRect, elements
+);
+jump=Collision_Right_OnTheWay(140 * size, enemy->CurrentMove.CurrentFrame, enemy->PositionRect, elements);
+} 
+else { step=Collision_Left_OnTheWay(enemy->speed, enemy->CurrentMove.CurrentFrame, enemy->PositionRect,
+elements);
+jump=Collision_Left_OnTheWay(140 * size, enemy->CurrentMove.CurrentFrame, enemy->PositionRect, elements); }
+enemy->PositionRect.x+=(step*enemy->direction); 
+enemy->steps+=(enemy->speed*enemy->direction);
+enemy->events.up=0; if(jump!=140 * size) { enemy->events.up=1; } }
+
+int Kill_Enemy(int e, ENEMY enemies[], int EnemiesNumber)
+{ int i; for(i=e;i<EnemiesNumber-1;i++) { enemies[i]=enemies[i+1]; }
+return EnemiesNumber-1; }
+void Enemy_Fight(HERO *Hero, ENEMY enemies[], int *EnemiesNumber, ALL_ELEMENTS elements) 
+{ int direction,Enemy=-1;
+direction=Collision_Enemy(&Enemy, *EnemiesNumber, Hero->speed*2, *Hero, enemies);
+printf("XXXXXXXXXXX:%d %d",Hero->speed*2,Hero->speed);
+if(direction==4) 
+{ Hero->IsJumping=1; Hero->grav=1;
+jump(Hero->events,&Hero->IsJumping,Hero->CurrentMove.CurrentFrame,&Hero->PositionRect,Hero->speed, elements)
+;
+if(((enemies[Enemy].health.HealthBar->w*45)/100) < enemies[Enemy].health.BloodRect.w) 
+{ enemies[Enemy].health.BloodRect.w = enemies[Enemy].health.BloodRect.w-((enemies[Enemy].health.Healt
+hBar->w*45)/100);
+enemies[Enemy].health.blood = enemies[Enemy].health.blood - ((enemies[Enemy].health.HealthBar->w*45)/100);
+} else { printf("DELETE ENEMY %d ^%d^", Enemy, *EnemiesNumber);
+*EnemiesNumber = Kill_Enemy(Enemy, enemies, *EnemiesNumber); } } 
+else if((direction==1 /*&& hero.events.right==1*/) || (direction==2 /*&& hero.events.left==1*/) || (d
+irection==3 /*&& hero.events.up==1*/)) { if(((Hero->health.HealthBar->w*10)/100) < Hero->health.Blo
+odRect.w) { Hero->health.BloodRect.w = Hero->health.BloodRect.w-((Hero->health.HealthBar->w*10)/100);
+Hero->health.blood = Hero->health.blood -((Hero->health.HealthBar->w*10)/100);
+if(direction==1) { Hero->PositionRect.x-=160*((float)MyGame.screen->w/MyGame.FULLWIDTH);; }
+if(direction==2) { Hero->PositionRect.x+=160*((float)MyGame.screen->w/MyGame.FULLWIDTH);; } } 
+else { WINDOW("./images/endofgame/LOOSER.png"); } } }
